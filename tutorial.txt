@@ -1,0 +1,108 @@
+1. Clone the repository
+2. Go to the project root directory and run composer install
+3. Run php init from the project root directory and choose your desired environment
+4. Create the database
+5. Open common/config/main-local.php
+Configure database credentials by changing the following lines
+'dsn' => 'mysql:host=localhost;dbname=your_website_db',
+'username' => 'root',
+'password' => '',
+'charset' => 'utf8mb4',
+If you want to use real SMTP credentials to send emails, configure the mail provider by replacing mailer component with the following code
+'mailer' => [
+    'class' => 'yii\swiftmailer\Mailer',
+    'transport' => [
+        'class' => 'Swift_SmtpTransport',
+        'host' => 'SMTP_HOST',
+        'username' => 'SMTP_USERNAME',
+        'password' => 'SMTP_PASSWORD',
+        'port' => 'SMTP_PORT',
+        'encryption' => 'tls',
+    ],
+],
+6. Run php yii migrate to apply all system migrations.
+7. Create virtual hosts for frontend/web and backend/web directories. Virtual Host templates
+<VirtualHost *:80>
+    ServerName eshop29.localhost
+    DocumentRoot "/path/to/eshop29/frontend/web/"
+    
+    <Directory "/path/to/eshop29/frontend/web/">
+        # use mod_rewrite for pretty URL support
+        RewriteEngine on
+        # If a directory or a file exists, use the request directly
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        # Otherwise forward the request to index.php
+        RewriteRule . index.php
+
+        # use index.php as index file
+        DirectoryIndex index.php
+
+        # ...other settings...
+        # Apache 2.4
+        Require all granted
+        
+        ## Apache 2.2
+        # Order allow,deny
+        # Allow from all
+    </Directory>
+</VirtualHost>
+
+
+<VirtualHost *:80>
+    ServerName backend.eshop29.localhost
+    DocumentRoot "/path/to/eshop29/backend/web/"
+    
+    <Directory "/path/to/eshop29/backend/web/">
+        # use mod_rewrite for pretty URL support
+        RewriteEngine on
+        # If a directory or a file exists, use the request directly
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        # Otherwise forward the request to index.php
+        RewriteRule . index.php
+
+        # use index.php as index file
+        DirectoryIndex index.php
+
+        # ...other settings...
+        # Apache 2.4
+        Require all granted
+        
+        ## Apache 2.2
+        # Order allow,deny
+        # Allow from all
+    </Directory>
+</VirtualHost>
+
+database codes array
+  1. product table
+    $ php yii migrate/create create_product_table --fields="name:string(255):notNull,description:text(),image:string(2000),price:decimal(10, 2):notNull,status:integer(2):notNull,created_at:integer(11),updated_at:integer(11),created_by:integer(11):foreignKey(user),updated_by:integer(11):foreignKey(user)"
+
+    *** after creating this database go to
+        C:\xampp\htdocs\eshop29\console\migrations\m250109_170053_create_product_table.php and change
+        'description' => text(),
+        to
+        'description' => 'LONGTEXT',
+        change
+        'status' => $this->integer(2)->notNull(),
+        to
+        'status' => $this->tinyInteger(2)->notNull(),
+        
+        bcz there is no direct method in yii2 to create product table with longtext directly.
+
+  2. user addresses
+    $ php yii migrate/create create_user_addresses_table --fields="user_id:integer(11):notNull:foreignKey(user),address:string(255):notNull,city:string(255):notNull,state:string(255):notNull,country:string(255):notNull,zipcode:string(255)"
+
+  3. orders
+    $ php yii migrate/create create_orders_table --fields="id:integer(11):notNull,total_price:decimal(10, 2):notNull,status:integer(1):notNull,firstname:string(45):notNull,lastname:string(45):notNull,email:string(255):notNull,transaction_id:string(255):notNull,created_at:integer(11),created_by:integer(11):foreignKey(user)"
+
+  4. order_items  
+    php yii migrate/create create_order_items_table --fields="product_name:string(255):notNull,product_id:integer(11):notNull:foreignKey(products),unit_price:decimal(10,2):notNull,order_id:integer(11):notNull:foreignKey(orders),quantity:integer(2):notNull"
+5. order_addresses
+  php yii migrate/create create_order_addresses_table --fields="order_id:integer:notNull:foreignKey(orders),address:string(255):notNull,city:string(255):notNull,state:string(255):notNull,country:string(255):notNull,zipcode:string(255)"
+6. cart_items
+  php yii migrate/create create_cart_items_table --fields="product_id:integer(11):notNull:foreignKey(products),quantity:integer(2):notNull,created_by:integer(11):foreignKey(user)"
+
+7. now migrate all tables with below code. and debug data if there any errors.
+    php yii migrate
